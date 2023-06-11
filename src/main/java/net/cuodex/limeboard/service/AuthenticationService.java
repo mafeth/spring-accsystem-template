@@ -63,7 +63,7 @@ public class AuthenticationService {
         return session;
     }
 
-    public boolean isSessionValid(String sessionId, String ipAddress) {
+    public boolean isSessionValid(String sessionId) {
         if (OtherUtils.getSessionIdList(activeSessions).contains(sessionId)) {
             if (System.currentTimeMillis() - getSession(sessionId).getLastUsed() > Variables.SESSION_TIMEOUT) {
                 invalidateSession(sessionId);
@@ -79,8 +79,8 @@ public class AuthenticationService {
         activeSessions.removeIf(activeSession -> activeSession.getSessionId().equals(sessionId));
     }
 
-    public LimeUser getUser(String sessionId, String ipAddress) {
-        if (isSessionValid(sessionId, ipAddress)) {
+    public LimeUser getUser(String sessionId) {
+        if (isSessionValid(sessionId)) {
             getSession(sessionId).setLastUsed(System.currentTimeMillis());
             return userRepository.getById(getSession(sessionId).getAccountId());
         }else {
@@ -119,6 +119,16 @@ public class AuthenticationService {
         LimeboardBackendApplication.LOGGER.info("User '" + username + "' successfully created.");
 
         return new DefaultReturnable(HttpStatus.CREATED, "User successfully created.").addData("user", user);
+    }
+
+    public DefaultReturnable checkSession(String sessionId) {
+        if (!isSessionValid(sessionId))
+            return new DefaultReturnable(HttpStatus.UNAUTHORIZED, "Session id is invalid or expired.");
+
+        UserSession session = getSession(sessionId);
+
+        return new DefaultReturnable(HttpStatus.OK, "Session id is valid.")
+                .addData("session", session);
     }
 
 
